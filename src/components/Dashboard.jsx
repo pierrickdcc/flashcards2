@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useFlashcards } from '../context/FlashcardContext';
+import { useFlashcard } from '../context/FlashcardContext';
 import styles from './Dashboard.module.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 

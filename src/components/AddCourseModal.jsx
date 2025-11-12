@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import modalStyles from './Modal.module.css';
-import { useFlashcards } from '../context/FlashcardContext';
+import { useFlashcard } from '../context/FlashcardContext';
 
 const AddCourseModal = ({ show, onClose }) => {
-  const { subjects, addCourse } = useFlashcards();
+  const { subjects, addCourse } = useFlashcard();
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
