@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
-import { useFlashcard } from '../FlashcardContext';
+import { useFlashcard } from '../context/FlashcardContext';
 import { calculateNextReview } from '../utils/spacedRepetition';
 
 const ReviewMode = () => {
