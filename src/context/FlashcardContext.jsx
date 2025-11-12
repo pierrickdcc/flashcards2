@@ -180,20 +180,24 @@ export const FlashcardProvider = ({ children }) => {
       setIsSyncing(false);
     }
   };
-  // Adapter les noms de colonnes entre Supabase (snake_case) et local (camelCase)
-const formatCardFromSupabase = (card) => ({
-  ...card,
-  nextReview: card.next_review, // Conversion
-  easinessFactor: card.easiness_factor,
-  updatedAt: card.updated_at
-});
 
-const formatCardForSupabase = (card) => ({
-  ...card,
-  next_review: card.nextReview, // Conversion inverse
-  easiness_factor: card.easinessFactor,
-  user_id: session.user.id // IMPORTANT: ajouter user_id
-});
+  const formatCardFromSupabase = (card) => ({
+    ...card,
+    nextReview: card.next_review,
+    easinessFactor: card.easiness_factor,
+    updatedAt: card.updated_at
+  });
+
+  const formatCardForSupabase = (card) => {
+    const { nextReview, easinessFactor, ...rest } = card;
+    return {
+      ...rest,
+      next_review: nextReview,
+      easiness_factor: easinessFactor,
+      user_id: session.user.id
+    };
+  };
+
   /**
    * Adds a new flashcard to the database.
    * @param {{question: string, answer: string, subject: string}} card - The card to add.

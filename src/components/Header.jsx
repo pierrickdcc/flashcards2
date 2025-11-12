@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useFlashcard } from '../context/FlashcardContext';
 
 const Header = () => {
-  const { session, toggleConfigModal, toggleAddCardModal, toggleAddCourseModal, signOut } = useFlashcard();
+  const { session, toggleConfigModal, toggleAddCardModal, toggleAddCourseModal, toggleSignOutModal } = useFlashcard();
   const [showMenu, setShowMenu] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -116,7 +116,7 @@ const Header = () => {
                       <span>Configuration (Ctrl+,)</span>
                     </button>
                     <button
-                      onClick={signOut}
+                      onClick={() => { toggleSignOutModal(); setShowMenu(false); }}
                       className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 text-red-600"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
