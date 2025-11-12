@@ -1,13 +1,39 @@
-
-import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../supabaseClient';
 import { db } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import toast from 'react-hot-toast';
 import { DEFAULT_SUBJECT } from '../constants/app';
-import { calculateNextReview } from '../utils/spacedRepetition';
 
 const FlashcardContext = createContext();
+
+/**
+ * Calculates the next review date for a flashcard based on user performance.
+ * @param {number} quality - The quality of the review (0-5).
+ * @param {number} interval - The current interval in days.
+ * @param {number} easiness - The current easiness factor.
+ * @returns {{interval: number, easiness: number, nextReview: string}} - The new interval, easiness factor, and next review date.
+ */
+export const calculateNextReview = (quality, interval, easiness) => {
+  if (quality < 3) {
+    return { interval: 1, easiness, nextReview: new Date().toISOString() };
+  }
+
+  let newEasiness = easiness + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+  if (newEasiness < 1.3) newEasiness = 1.3;
+
+  let newInterval;
+  if (interval === 1) {
+    newInterval = 6;
+  } else {
+    newInterval = Math.ceil(interval * newEasiness);
+  }
+
+  const nextReview = new Date();
+  nextReview.setDate(nextReview.getDate() + newInterval);
+
+  return { interval: newInterval, easiness: newEasiness, nextReview: nextReview.toISOString() };
+};
 
 export const FlashcardProvider = ({ children }) => {
   const [session, setSession] = useState(null);
@@ -17,16 +43,6 @@ export const FlashcardProvider = ({ children }) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(null);
-
-  const [showConfigModal, setShowConfigModal] = useState(false);
-  const [showAddCardModal, setShowAddCardModal] = useState(false);
-  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
-  const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
-  const [showBulkAddModal, setShowBulkAddModal] = useState(false);
-  const [showDeleteSubjectModal, setShowDeleteSubjectModal] = useState(false);
-  const [showSignOutModal, setShowSignOutModal] = useState(false);
-  const [showReviewMode, setShowReviewMode] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
 
   const cards = useLiveQuery(() => db.cards.toArray(), []);
   const subjects = useLiveQuery(() => db.subjects.toArray(), []);
@@ -150,36 +166,11 @@ export const FlashcardProvider = ({ children }) => {
   }, [session, workspaceId]);
 
   const syncToCloud = async () => {
-    if (!session || !isOnline || !workspaceId || isSyncing) return;
+    if (!session || !isOnline || !workspaceId) return;
 
     setIsSyncing(true);
     toast.loading('Synchronisation en cours...');
     try {
-      // UPWARD SYNC
-      const localCards = await db.cards.filter(c => c.id.startsWith('local_') || (lastSync && new Date(c.updated_at) > lastSync)).toArray();
-      const localSubjects = await db.subjects.filter(s => s.id.startsWith('local_') || (lastSync && new Date(s.created_at) > lastSync)).toArray();
-      const localCourses = await db.courses.filter(c => c.id.startsWith('local_') || (lastSync && new Date(c.created_at) > lastSync)).toArray();
-
-      if (localCards.length > 0) {
-        const { error } = await supabase.from('flashcards').upsert(localCards.map(formatCardForSupabase));
-        if (error) throw error;
-      }
-      if (localSubjects.length > 0) {
-        const { error } = await supabase.from('subjects').upsert(localSubjects);
-        if (error) throw error;
-      }
-      if (localCourses.length > 0) {
-        const { error } = await supabase.from('courses').upsert(localCourses);
-        if (error) throw error;
-      }
-
-      // Remove local-only cards that are now synced
-      await db.cards.where('id').startsWith('local_').delete();
-      await db.subjects.where('id').startsWith('local_').delete();
-      await db.courses.where('id').startsWith('local_').delete();
-
-
-      // DOWNWARD SYNC
       const { data: cloudCards, error: cardsError } = await supabase.from('flashcards').select('*').eq('workspace_id', workspaceId);
       const { data: cloudSubjects, error: subjectsError } = await supabase.from('subjects').select('*').eq('workspace_id', workspaceId);
       const { data: cloudCourses, error: coursesError } = await supabase.from('courses').select('*').eq('workspace_id', workspaceId);
@@ -187,7 +178,7 @@ export const FlashcardProvider = ({ children }) => {
       if (cardsError || subjectsError || coursesError) throw cardsError || subjectsError || coursesError;
 
       await db.transaction('rw', db.cards, db.subjects, db.courses, async () => {
-        await db.cards.bulkPut(cloudCards.map(formatCardFromSupabase));
+        await db.cards.bulkPut(cloudCards);
         await db.subjects.bulkPut(cloudSubjects);
         await db.courses.bulkPut(cloudCourses);
       });
@@ -206,24 +197,20 @@ export const FlashcardProvider = ({ children }) => {
       setIsSyncing(false);
     }
   };
+  // Adapter les noms de colonnes entre Supabase (snake_case) et local (camelCase)
+const formatCardFromSupabase = (card) => ({
+  ...card,
+  nextReview: card.next_review, // Conversion
+  easinessFactor: card.easiness_factor,
+  updatedAt: card.updated_at
+});
 
-  const formatCardFromSupabase = (card) => ({
-    ...card,
-    nextReview: card.next_review,
-    easinessFactor: card.easiness_factor,
-    updatedAt: card.updated_at
-  });
-
-  const formatCardForSupabase = (card) => {
-    const { nextReview, easinessFactor, ...rest } = card;
-    return {
-      ...rest,
-      next_review: nextReview,
-      easiness_factor: easinessFactor,
-      user_id: session.user.id
-    };
-  };
-
+const formatCardForSupabase = (card) => ({
+  ...card,
+  next_review: card.nextReview, // Conversion inverse
+  easiness_factor: card.easinessFactor,
+  user_id: session.user.id // IMPORTANT: ajouter user_id
+});
   /**
    * Adds a new flashcard to the database.
    * @param {{question: string, answer: string, subject: string}} card - The card to add.
@@ -481,44 +468,11 @@ export const FlashcardProvider = ({ children }) => {
     window.location.reload();
   };
 
-  const toggleConfigModal = () => setShowConfigModal(prev => !prev);
-  const toggleAddCardModal = () => setShowAddCardModal(prev => !prev);
-  const toggleAddCourseModal = () => setShowAddCourseModal(prev => !prev);
-  const toggleAddSubjectModal = () => setShowAddSubjectModal(prev => !prev);
-  const toggleBulkAddModal = () => setShowBulkAddModal(prev => !prev);
-  const toggleDeleteSubjectModal = () => setShowDeleteSubjectModal(prev => !prev);
-  const toggleSignOutModal = () => setShowSignOutModal(prev => !prev);
-
-  const cardsToReview = useMemo(() => {
-    if (!cards) return [];
-    const now = new Date();
-    return cards.filter(c => new Date(c.nextReview) <= now).sort(() => Math.random() - 0.5);
-  }, [cards]);
-
   const value = {
     session, cards, subjects, courses, darkMode, setDarkMode, workspaceId, setWorkspaceId, isConfigured, isOnline,
     isSyncing, lastSync, syncToCloud, updateCardWithSync, deleteCardWithSync, handleBulkAdd, addSubject, reviewCard, addCard,
     handleDeleteCardsOfSubject, handleReassignCardsOfSubject, addCourse,
     signOut,
-    showConfigModal,
-    showAddCardModal,
-    showAddCourseModal,
-    showAddSubjectModal,
-    showBulkAddModal,
-    showDeleteSubjectModal,
-    showSignOutModal,
-    toggleConfigModal,
-    toggleAddCardModal,
-    toggleAddCourseModal,
-    toggleAddSubjectModal,
-    toggleBulkAddModal,
-    toggleDeleteSubjectModal,
-    toggleSignOutModal,
-    showReviewMode,
-    setShowReviewMode,
-    cardsToReview,
-    searchTerm,
-    setSearchTerm,
   };
 
   return (
@@ -528,10 +482,10 @@ export const FlashcardProvider = ({ children }) => {
   );
 };
 
-export const useFlashcard = () => {
+export const useFlashcards = () => {
   const context = useContext(FlashcardContext);
   if (context === undefined) {
-    throw new Error('useFlashcard must be used within a FlashcardProvider');
+    throw new Error('useFlashcards must be used within a FlashcardProvider');
   }
   return context;
 };

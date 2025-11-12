@@ -1,7 +1,5 @@
-
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useFlashcard } from './context/FlashcardContext';
+import { useFlashcards } from './context/FlashcardContext';
 import Auth from './components/Auth';
 import Header from './components/Header';
 import DeleteSubjectModal from './components/DeleteSubjectModal';
@@ -34,85 +32,80 @@ const FlashcardsPWA = () => {
     updateCardWithSync,
     handleDeleteCardsOfSubject,
     handleReassignCardsOfSubject,
-    signOut,
-    showConfigModal,
-    showAddCardModal,
-    showAddCourseModal,
-    showAddSubjectModal,
-    showBulkAddModal,
-    showDeleteSubjectModal,
-    showSignOutModal,
-    toggleConfigModal,
-    toggleAddCardModal,
-    toggleAddCourseModal,
-    toggleAddSubjectModal,
-    toggleBulkAddModal,
-    toggleDeleteSubjectModal,
-    toggleSignOutModal,
-    showReviewMode,
-    setShowReviewMode,
-    cardsToReview,
-    searchTerm
-  } = useFlashcard();
+    setWorkspaceId,
+    workspaceId,
+    isConfigured,
+    signOut
+  } = useFlashcards();
 
   // --- LOCAL UI STATE ---
   const [view, setView] = useState('courses');
   const [selectedSubject, setSelectedSubject] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [reviewMode, setReviewMode] = useState(false);
+  const [currentCard, setCurrentCard] = useState(null);
+  const [showAnswer, setShowAnswer] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
 
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe) {
-      const views = ['courses', 'cards', 'table', 'dashboard'];
-      const currentIndex = views.indexOf(view);
-      const nextIndex = (currentIndex + 1) % views.length;
-      setView(views[nextIndex]);
-    }
-    if (isRightSwipe) {
-      const views = ['courses', 'cards', 'table', 'dashboard'];
-      const currentIndex = views.indexOf(view);
-      const prevIndex = currentIndex === 0 ? views.length - 1 : currentIndex - 1;
-      setView(views[prevIndex]);
-    }
-  };
-
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
+  const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+  const [showDeleteSubjectModal, setShowDeleteSubjectModal] = useState(false);
   const [subjectToDelete, setSubjectToDelete] = useState(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   const handleDeleteSubject = (subjectName) => {
     setSubjectToDelete(subjectName);
-    toggleDeleteSubjectModal();
+    setShowDeleteSubjectModal(true);
   };
 
   const confirmDeleteSubject = () => {
     handleDeleteCardsOfSubject(subjectToDelete);
-    toggleDeleteSubjectModal();
+    setShowDeleteSubjectModal(false);
     setSubjectToDelete(null);
     setSelectedSubject('all');
   };
 
   const confirmReassignSubject = () => {
     handleReassignCardsOfSubject(subjectToDelete);
-    toggleDeleteSubjectModal();
+    setShowDeleteSubjectModal(false);
     setSubjectToDelete(null);
     setSelectedSubject(DEFAULT_SUBJECT);
+  };
+
+  const getCardsToReview = () => {
+    if (!cards) return [];
+    const now = new Date();
+    let filtered = cards.filter(c => new Date(c.nextReview) <= now);
+    if (selectedSubject !== 'all') {
+      filtered = filtered.filter(c => c.subject === selectedSubject);
+    }
+    return filtered.sort(() => Math.random() - 0.5);
+  };
+
+  const startReview = () => {
+    const toReview = getCardsToReview();
+    if (toReview.length > 0) {
+      setCurrentCard(toReview[0]);
+      setReviewMode(true);
+      setShowAnswer(false);
+    }
+  };
+
+  const handleReviewCard = (quality) => {
+    reviewCard(currentCard, quality);
+    setShowAnswer(false);
+
+    const remaining = getCardsToReview().filter(c => c.id !== currentCard.id);
+    if (remaining.length > 0) {
+      setCurrentCard(remaining[0]);
+    } else {
+      setReviewMode(false);
+      setCurrentCard(null);
+    }
   };
 
   const filteredCards = useMemo(() => {
@@ -130,6 +123,7 @@ const FlashcardsPWA = () => {
     });
   }, [cards, selectedSubject, searchTerm]);
 
+  const cardsToReview = getCardsToReview();
   const stats = {
     total: cards?.length || 0,
     toReview: cardsToReview.length,
@@ -149,26 +143,42 @@ const FlashcardsPWA = () => {
     );
   }
 
+  if (reviewMode && currentCard) {
+    return (
+      <ReviewMode
+        currentCard={currentCard}
+        cardsToReview={cardsToReview}
+        setReviewMode={setReviewMode}
+        showAnswer={showAnswer}
+        setShowAnswer={setShowAnswer}
+        reviewCard={handleReviewCard}
+      />
+    );
+  }
+
   const handleSignOut = () => {
     signOut();
   };
 
   return (
-    <div
-      className="min-h-screen bg-gray-50 dark:bg-gray-900"
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-    >
+    <div>
       <Toaster />
-      <Header />
+      <Header
+        setShowConfigModal={setShowConfigModal}
+        isConfigured={isConfigured}
+        setShowSignOutModal={setShowSignOutModal}
+      />
 
       <main style={{ maxWidth: '80rem', margin: '0 auto', padding: '2rem 1rem' }}>
         <Stats stats={stats} />
         
         <Actions
-          startReview={() => setShowReviewMode(true)}
+          startReview={startReview}
           cardsToReviewCount={cardsToReview.length}
+          setShowBulkModal={setShowBulkModal}
+          setShowAddSubjectModal={setShowAddSubjectModal}
+          setShowAddCardModal={setShowAddCardModal}
+          setShowAddCourseModal={setShowAddCourseModal}
         />
         
         <Filters
@@ -178,74 +188,66 @@ const FlashcardsPWA = () => {
           setSelectedSubject={setSelectedSubject}
           subjects={subjects || []}
           onDeleteSubject={handleDeleteSubject}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
         />
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={view}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            {view === 'courses' && (
-              <CourseList
-                onCourseSelect={setSelectedCourse}
-              />
-            )}
-            {view === 'cards' && (
-              <CardGrid
-                filteredCards={filteredCards}
-                setEditingCard={setEditingCard}
-                deleteCardWithSync={deleteCardWithSync}
-              />
-            )}
-            {view === 'table' && (
-              <CardTable
-                filteredCards={filteredCards}
-                editingCard={editingCard}
-                setEditingCard={setEditingCard}
-                updateCardWithSync={updateCardWithSync}
-                deleteCardWithSync={deleteCardWithSync}
-                subjects={subjects || []}
-              />
-            )}
-            {view === 'dashboard' && (
-              <Dashboard />
-            )}
-          </motion.div>
-        </AnimatePresence>
+        {view === 'courses' && (
+          <CourseList
+            onCourseSelect={setSelectedCourse}
+          />
+        )}
+        {view === 'cards' && (
+          <CardGrid
+            filteredCards={filteredCards}
+            setEditingCard={setEditingCard}
+            deleteCardWithSync={deleteCardWithSync}
+          />
+        )}
+        {view === 'table' && (
+          <CardTable
+            filteredCards={filteredCards}
+            editingCard={editingCard}
+            setEditingCard={setEditingCard}
+            updateCardWithSync={updateCardWithSync}
+            deleteCardWithSync={deleteCardWithSync}
+            subjects={subjects || []}
+          />
+        )}
+        {view === 'dashboard' && (
+          <Dashboard />
+        )}
       </main>
 
       {/* Modals */}
       <ConfigModal
         show={showConfigModal}
-        onClose={toggleConfigModal}
+        onClose={() => setShowConfigModal(false)}
       />
       
       <BulkAddModal
-        show={showBulkAddModal}
-        onClose={toggleBulkAddModal}
+        show={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
       />
       
       <AddSubjectModal
         show={showAddSubjectModal}
-        onClose={toggleAddSubjectModal}
+        onClose={() => setShowAddSubjectModal(false)}
       />
 
       <AddCardModal
         show={showAddCardModal}
-        onClose={toggleAddCardModal}
+        onClose={() => setShowAddCardModal(false)}
       />
 
       <AddCourseModal
         show={showAddCourseModal}
-        onClose={toggleAddCourseModal}
+        onClose={() => setShowAddCourseModal(false)}
       />
 
       <DeleteSubjectModal
         show={showDeleteSubjectModal}
-        onClose={toggleDeleteSubjectModal}
+        onClose={() => setShowDeleteSubjectModal(false)}
         onDelete={confirmDeleteSubject}
         onReassign={confirmReassignSubject}
         subjectToDelete={subjectToDelete}
@@ -253,7 +255,7 @@ const FlashcardsPWA = () => {
 
       <SignOutConfirmationModal
         show={showSignOutModal}
-        onClose={toggleSignOutModal}
+        onClose={() => setShowSignOutModal(false)}
         onConfirm={handleSignOut}
       />
     </div>
