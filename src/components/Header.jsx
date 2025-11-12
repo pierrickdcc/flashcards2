@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useFlashcard } from '../context/FlashcardContext';
+import { useFlashcard } from '../FlashcardContext';
 
 const Header = () => {
-  const { session, searchTerm, setSearchTerm, toggleConfigModal, toggleAddCardModal, toggleAddCourseModal, toggleSignOutModal } = useFlashcard();
+  const { session, toggleConfigModal, toggleAddCardModal, toggleAddCourseModal, signOut } = useFlashcard();
   const [showMenu, setShowMenu] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     // Raccourcis clavier globaux
@@ -57,8 +58,8 @@ const Header = () => {
               <input
                 id="search-input"
                 type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Rechercher... (Ctrl+K)"
                 className="w-full px-4 py-2 pl-10 pr-10 bg-gray-100 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
               />
@@ -115,7 +116,7 @@ const Header = () => {
                       <span>Configuration (Ctrl+,)</span>
                     </button>
                     <button
-                      onClick={() => { toggleSignOutModal(); setShowMenu(false); }}
+                      onClick={signOut}
                       className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 text-red-600"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

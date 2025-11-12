@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import modalStyles from './Modal.module.css';
 import styles from './BulkAddModal.module.css';
-import { useFlashcard } from '../context/FlashcardContext';
+import { useFlashcards } from '../context/FlashcardContext';
 
 const BulkAddModal = ({ show, onClose }) => {
-  const { handleBulkAdd } = useFlashcard();
+  const { handleBulkAdd } = useFlashcards();
   const [bulkAdd, setBulkAdd] = useState('');
 
   useEffect(() => {

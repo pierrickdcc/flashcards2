@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
-import { useFlashcard } from '../context/FlashcardContext';
+import { useFlashcards } from '../context/FlashcardContext';
 import styles from './Dashboard.module.css';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF1943'];
 
 const Dashboard = () => {
-  const { cards, subjects } = useFlashcard();
+  const { cards, subjects } = useFlashcards();
 
   const stats = useMemo(() => {
     if (!cards || cards.length === 0) {

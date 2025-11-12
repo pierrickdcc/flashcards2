@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import modalStyles from './Modal.module.css';
-import { useFlashcard } from '../context/FlashcardContext';
+import { useFlashcards } from '../context/FlashcardContext';
+import { DEFAULT_SUBJECT } from '../constants/app';
 
 const AddCourseModal = ({ show, onClose }) => {
-  const { subjects, addCourse } = useFlashcard();
+  const { subjects, addCourse } = useFlashcards();
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
@@ -14,7 +15,7 @@ const AddCourseModal = ({ show, onClose }) => {
       if (subjects && subjects.length > 0) {
         setSubject(subjects[0].name);
       } else {
-        setSubject('Général');
+        setSubject(DEFAULT_SUBJECT);
       }
     }
   }, [show, subjects]);
@@ -37,7 +38,7 @@ const AddCourseModal = ({ show, onClose }) => {
     addCourse({ title, subject, content: htmlContent });
     onClose();
     setTitle('');
-    setSubject(subjects && subjects.length > 0 ? subjects[0].name : 'Général');
+    setSubject(subjects && subjects.length > 0 ? subjects[0].name : DEFAULT_SUBJECT);
     setHtmlContent('');
   };
 
@@ -57,7 +58,7 @@ const AddCourseModal = ({ show, onClose }) => {
               <option key={s.id || s.name} value={s.name}>{s.name}</option>
             ))
           ) : (
-            <option value="Général">Général</option>
+            <option value={DEFAULT_SUBJECT}>{DEFAULT_SUBJECT}</option>
           )}
         </select>
         <textarea

@@ -2,16 +2,7 @@ import React from 'react';
 import { Brain, Plus, FolderPlus, FilePlus, BookPlus } from 'lucide-react';
 import styles from './Actions.module.css';
 
-import { useFlashcard } from '../context/FlashcardContext';
-
-const Actions = ({ startReview, cardsToReviewCount }) => {
-  const {
-    toggleBulkAddModal,
-    toggleAddSubjectModal,
-    toggleAddCardModal,
-    toggleAddCourseModal,
-  } = useFlashcard();
-
+const Actions = ({ startReview, cardsToReviewCount, setShowBulkModal, setShowAddSubjectModal, setShowAddCardModal, setShowAddCourseModal }) => {
   return (
     <div className={styles.actionsContainer}>
       <button
@@ -24,28 +15,28 @@ const Actions = ({ startReview, cardsToReviewCount }) => {
       </button>
       
       <button
-        onClick={toggleAddCardModal}
+        onClick={() => setShowAddCardModal(true)}
         className={`${styles.button} ${styles.secondaryButton}`}
       >
         <FilePlus size={20} /> Ajouter une carte
       </button>
 
       <button
-        onClick={toggleAddCourseModal}
+        onClick={() => setShowAddCourseModal(true)}
         className={`${styles.button} ${styles.secondaryButton}`}
       >
         <BookPlus size={20} /> Ajouter un cours
       </button>
 
       <button
-        onClick={toggleBulkAddModal}
+        onClick={() => setShowBulkModal(true)}
         className={`${styles.button} ${styles.secondaryButton}`}
       >
         <Plus size={20} /> Ajout en masse
       </button>
 
       <button
-        onClick={toggleAddSubjectModal}
+        onClick={() => setShowAddSubjectModal(true)}
         className={`${styles.button} ${styles.secondaryButton}`}
       >
         <FolderPlus size={20} /> Matière
