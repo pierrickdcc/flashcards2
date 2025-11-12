@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFlashcards } from '../context/FlashcardContext';
+import { useFlashcard } from '../context/FlashcardContext';
 import styles from './CourseList.module.css';
 import { motion } from 'framer-motion';
 
