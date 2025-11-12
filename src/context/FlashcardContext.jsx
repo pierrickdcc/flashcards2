@@ -1,39 +1,13 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+
+import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import { db } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import toast from 'react-hot-toast';
 import { DEFAULT_SUBJECT } from '../constants/app';
+import { calculateNextReview } from '../utils/spacedRepetition';
 
 const FlashcardContext = createContext();
-
-/**
- * Calculates the next review date for a flashcard based on user performance.
- * @param {number} quality - The quality of the review (0-5).
- * @param {number} interval - The current interval in days.
- * @param {number} easiness - The current easiness factor.
- * @returns {{interval: number, easiness: number, nextReview: string}} - The new interval, easiness factor, and next review date.
- */
-export const calculateNextReview = (quality, interval, easiness) => {
-  if (quality < 3) {
-    return { interval: 1, easiness, nextReview: new Date().toISOString() };
-  }
-
-  let newEasiness = easiness + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-  if (newEasiness < 1.3) newEasiness = 1.3;
-
-  let newInterval;
-  if (interval === 1) {
-    newInterval = 6;
-  } else {
-    newInterval = Math.ceil(interval * newEasiness);
-  }
-
-  const nextReview = new Date();
-  nextReview.setDate(nextReview.getDate() + newInterval);
-
-  return { interval: newInterval, easiness: newEasiness, nextReview: nextReview.toISOString() };
-};
 
 export const FlashcardProvider = ({ children }) => {
   const [session, setSession] = useState(null);
@@ -43,6 +17,15 @@ export const FlashcardProvider = ({ children }) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(null);
+
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
+  const [showAddSubjectModal, setShowAddSubjectModal] = useState(false);
+  const [showBulkAddModal, setShowBulkAddModal] = useState(false);
+  const [showDeleteSubjectModal, setShowDeleteSubjectModal] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [showReviewMode, setShowReviewMode] = useState(false);
 
   const cards = useLiveQuery(() => db.cards.toArray(), []);
   const subjects = useLiveQuery(() => db.subjects.toArray(), []);
@@ -468,11 +451,42 @@ const formatCardForSupabase = (card) => ({
     window.location.reload();
   };
 
+  const toggleConfigModal = () => setShowConfigModal(prev => !prev);
+  const toggleAddCardModal = () => setShowAddCardModal(prev => !prev);
+  const toggleAddCourseModal = () => setShowAddCourseModal(prev => !prev);
+  const toggleAddSubjectModal = () => setShowAddSubjectModal(prev => !prev);
+  const toggleBulkAddModal = () => setShowBulkAddModal(prev => !prev);
+  const toggleDeleteSubjectModal = () => setShowDeleteSubjectModal(prev => !prev);
+  const toggleSignOutModal = () => setShowSignOutModal(prev => !prev);
+
+  const cardsToReview = useMemo(() => {
+    if (!cards) return [];
+    const now = new Date();
+    return cards.filter(c => new Date(c.nextReview) <= now).sort(() => Math.random() - 0.5);
+  }, [cards]);
+
   const value = {
     session, cards, subjects, courses, darkMode, setDarkMode, workspaceId, setWorkspaceId, isConfigured, isOnline,
     isSyncing, lastSync, syncToCloud, updateCardWithSync, deleteCardWithSync, handleBulkAdd, addSubject, reviewCard, addCard,
     handleDeleteCardsOfSubject, handleReassignCardsOfSubject, addCourse,
     signOut,
+    showConfigModal,
+    showAddCardModal,
+    showAddCourseModal,
+    showAddSubjectModal,
+    showBulkAddModal,
+    showDeleteSubjectModal,
+    showSignOutModal,
+    toggleConfigModal,
+    toggleAddCardModal,
+    toggleAddCourseModal,
+    toggleAddSubjectModal,
+    toggleBulkAddModal,
+    toggleDeleteSubjectModal,
+    toggleSignOutModal,
+    showReviewMode,
+    setShowReviewMode,
+    cardsToReview,
   };
 
   return (
@@ -482,10 +496,10 @@ const formatCardForSupabase = (card) => ({
   );
 };
 
-export const useFlashcards = () => {
+export const useFlashcard = () => {
   const context = useContext(FlashcardContext);
   if (context === undefined) {
-    throw new Error('useFlashcards must be used within a FlashcardProvider');
+    throw new Error('useFlashcard must be used within a FlashcardProvider');
   }
   return context;
 };

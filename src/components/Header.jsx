@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useFlashcard } from '../FlashcardContext';
+import { useFlashcard } from '../context/FlashcardContext';
 
 const Header = () => {
   const { session, toggleConfigModal, toggleAddCardModal, toggleAddCourseModal, signOut } = useFlashcard();
