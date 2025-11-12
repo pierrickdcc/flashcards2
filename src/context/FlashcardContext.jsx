@@ -219,9 +219,9 @@ const formatCardForSupabase = (card) => ({
     if (isOnline) {
       const cardForSupabase = {
         ...card,
-        nextReview: new Date().toISOString(),
+        next_review: new Date().toISOString(),
         interval: 1,
-        reviewCount: 0,
+        repetitions: 0,
         updated_at: new Date().toISOString(),
         workspace_id: workspaceId
       };
@@ -417,8 +417,8 @@ const formatCardForSupabase = (card) => ({
         await supabase.from('flashcards').update({
             next_review: nextReview,
             interval: interval,
-            easiness: updated.easiness,
-            review_count: updated.reviewCount,
+            easiness_factor: updated.easiness,
+            repetitions: updated.reviewCount,
             updated_at: updated.updatedAt
           }).eq('id', currentCard.id).eq('workspace_id', workspaceId);
       } catch (err) {
@@ -482,10 +482,10 @@ const formatCardForSupabase = (card) => ({
   );
 };
 
-export const useFlashcards = () => {
+export const useFlashcard = () => {
   const context = useContext(FlashcardContext);
   if (context === undefined) {
-    throw new Error('useFlashcards must be used within a FlashcardProvider');
+    throw new Error('useFlashcard must be used within a FlashcardProvider');
   }
   return context;
 };
