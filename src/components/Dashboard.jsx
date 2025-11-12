@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF1943'];
 
 const Dashboard = () => {
-  const { cards, subjects } = useFlashcards();
+  const { cards, subjects } = useFlashcard();
 
   const stats = useMemo(() => {
     if (!cards || cards.length === 0) {

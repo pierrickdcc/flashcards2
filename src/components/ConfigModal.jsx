@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import modalStyles from './Modal.module.css';
 import styles from './ConfigModal.module.css';
-import { useFlashcards } from '../context/FlashcardContext';
 import { useFlashcard } from '../context/FlashcardContext';
 
 const ConfigModal = ({ show, onClose }) => {
