@@ -143,10 +143,17 @@ const FlashcardsPWA = () => {
     );
   }
 
-  const { showReviewMode } = useFlashcard();
-
-  if (showReviewMode) {
-    return <ReviewMode />;
+  if (reviewMode && currentCard) {
+    return (
+      <ReviewMode
+        currentCard={currentCard}
+        cardsToReview={cardsToReview}
+        setReviewMode={setReviewMode}
+        showAnswer={showAnswer}
+        setShowAnswer={setShowAnswer}
+        reviewCard={handleReviewCard}
+      />
+    );
   }
 
   const handleSignOut = () => {

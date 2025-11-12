@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import modalStyles from './Modal.module.css';
-import { useFlashcard } from '../context/FlashcardContext';
+import { useFlashcards } from '../context/FlashcardContext';
 
 const AddCardModal = ({ show, onClose }) => {
-  const { subjects, addCard } = useFlashcard();
+  const { subjects, addCard } = useFlashcards();
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [subject, setSubject] = useState('');

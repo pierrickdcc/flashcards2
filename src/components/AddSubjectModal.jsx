@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import modalStyles from './Modal.module.css';
 import styles from './AddSubjectModal.module.css';
-import { useFlashcard } from '../context/FlashcardContext';
+import { useFlashcards } from '../context/FlashcardContext';
 
 const AddSubjectModal = ({ show, onClose }) => {
-  const { addSubject } = useFlashcard();
+  const { addSubject } = useFlashcards();
   const [newSubject, setNewSubject] = useState('');
 
   useEffect(() => {
