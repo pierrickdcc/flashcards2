@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
  * }} props
  */
 const CourseList = ({ onCourseSelect }) => {
-  const { courses, subjects } = useFlashcards();
+  const { courses, subjects } = useFlashcard();
 
   if (!subjects || !courses) {
     return <div>Chargement...</div>;

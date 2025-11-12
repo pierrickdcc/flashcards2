@@ -3,9 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useFlashcard } from '../context/FlashcardContext';
 
 const Header = () => {
-  const { session, toggleConfigModal, toggleAddCardModal, toggleAddCourseModal, toggleSignOutModal } = useFlashcard();
+  const { session, searchTerm, setSearchTerm, toggleConfigModal, toggleAddCardModal, toggleAddCourseModal, toggleSignOutModal } = useFlashcard();
   const [showMenu, setShowMenu] = useState(false);
-  const [search, setSearch] = useState('');
 
   useEffect(() => {
     // Raccourcis clavier globaux
@@ -58,8 +57,8 @@ const Header = () => {
               <input
                 id="search-input"
                 type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Rechercher... (Ctrl+K)"
                 className="w-full px-4 py-2 pl-10 pr-10 bg-gray-100 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
               />

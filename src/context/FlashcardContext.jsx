@@ -26,6 +26,7 @@ export const FlashcardProvider = ({ children }) => {
   const [showDeleteSubjectModal, setShowDeleteSubjectModal] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showReviewMode, setShowReviewMode] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const cards = useLiveQuery(() => db.cards.toArray(), []);
   const subjects = useLiveQuery(() => db.subjects.toArray(), []);
@@ -149,11 +150,36 @@ export const FlashcardProvider = ({ children }) => {
   }, [session, workspaceId]);
 
   const syncToCloud = async () => {
-    if (!session || !isOnline || !workspaceId) return;
+    if (!session || !isOnline || !workspaceId || isSyncing) return;
 
     setIsSyncing(true);
     toast.loading('Synchronisation en cours...');
     try {
+      // UPWARD SYNC
+      const localCards = await db.cards.filter(c => c.id.startsWith('local_') || (lastSync && new Date(c.updated_at) > lastSync)).toArray();
+      const localSubjects = await db.subjects.filter(s => s.id.startsWith('local_') || (lastSync && new Date(s.created_at) > lastSync)).toArray();
+      const localCourses = await db.courses.filter(c => c.id.startsWith('local_') || (lastSync && new Date(c.created_at) > lastSync)).toArray();
+
+      if (localCards.length > 0) {
+        const { error } = await supabase.from('flashcards').upsert(localCards.map(formatCardForSupabase));
+        if (error) throw error;
+      }
+      if (localSubjects.length > 0) {
+        const { error } = await supabase.from('subjects').upsert(localSubjects);
+        if (error) throw error;
+      }
+      if (localCourses.length > 0) {
+        const { error } = await supabase.from('courses').upsert(localCourses);
+        if (error) throw error;
+      }
+
+      // Remove local-only cards that are now synced
+      await db.cards.where('id').startsWith('local_').delete();
+      await db.subjects.where('id').startsWith('local_').delete();
+      await db.courses.where('id').startsWith('local_').delete();
+
+
+      // DOWNWARD SYNC
       const { data: cloudCards, error: cardsError } = await supabase.from('flashcards').select('*').eq('workspace_id', workspaceId);
       const { data: cloudSubjects, error: subjectsError } = await supabase.from('subjects').select('*').eq('workspace_id', workspaceId);
       const { data: cloudCourses, error: coursesError } = await supabase.from('courses').select('*').eq('workspace_id', workspaceId);
@@ -161,7 +187,7 @@ export const FlashcardProvider = ({ children }) => {
       if (cardsError || subjectsError || coursesError) throw cardsError || subjectsError || coursesError;
 
       await db.transaction('rw', db.cards, db.subjects, db.courses, async () => {
-        await db.cards.bulkPut(cloudCards);
+        await db.cards.bulkPut(cloudCards.map(formatCardFromSupabase));
         await db.subjects.bulkPut(cloudSubjects);
         await db.courses.bulkPut(cloudCourses);
       });
@@ -491,6 +517,8 @@ export const FlashcardProvider = ({ children }) => {
     showReviewMode,
     setShowReviewMode,
     cardsToReview,
+    searchTerm,
+    setSearchTerm,
   };
 
   return (

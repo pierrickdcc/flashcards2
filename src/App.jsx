@@ -51,15 +51,13 @@ const FlashcardsPWA = () => {
     toggleSignOutModal,
     showReviewMode,
     setShowReviewMode,
-    cardsToReview
+    cardsToReview,
+    searchTerm
   } = useFlashcard();
 
   // --- LOCAL UI STATE ---
   const [view, setView] = useState('courses');
   const [selectedSubject, setSelectedSubject] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentCard, setCurrentCard] = useState(null);
-  const [showAnswer, setShowAnswer] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
@@ -117,27 +115,6 @@ const FlashcardsPWA = () => {
     setSelectedSubject(DEFAULT_SUBJECT);
   };
 
-  const startReview = () => {
-    if (cardsToReview.length > 0) {
-      setCurrentCard(cardsToReview[0]);
-      setShowReviewMode(true);
-      setShowAnswer(false);
-    }
-  };
-
-  const handleReviewCard = (quality) => {
-    reviewCard(currentCard, quality);
-    setShowAnswer(false);
-
-    const remaining = cardsToReview.filter(c => c.id !== currentCard.id);
-    if (remaining.length > 0) {
-      setCurrentCard(remaining[0]);
-    } else {
-      setShowReviewMode(false);
-      setCurrentCard(null);
-    }
-  };
-
   const filteredCards = useMemo(() => {
     if (!cards?.length) return [];
 
@@ -172,17 +149,6 @@ const FlashcardsPWA = () => {
     );
   }
 
-  if (showReviewMode && currentCard) {
-    return (
-      <ReviewMode
-        currentCard={currentCard}
-        showAnswer={showAnswer}
-        setShowAnswer={setShowAnswer}
-        reviewCard={handleReviewCard}
-      />
-    );
-  }
-
   const handleSignOut = () => {
     signOut();
   };
@@ -201,7 +167,7 @@ const FlashcardsPWA = () => {
         <Stats stats={stats} />
         
         <Actions
-          startReview={startReview}
+          startReview={() => setShowReviewMode(true)}
           cardsToReviewCount={cardsToReview.length}
         />
         
@@ -212,8 +178,6 @@ const FlashcardsPWA = () => {
           setSelectedSubject={setSelectedSubject}
           subjects={subjects || []}
           onDeleteSubject={handleDeleteSubject}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
         />
 
         <AnimatePresence mode="wait">
